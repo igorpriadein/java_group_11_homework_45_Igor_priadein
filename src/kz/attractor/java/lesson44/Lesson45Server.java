@@ -13,22 +13,31 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Lesson45Server extends Lesson44Server{
 
+
     public Lesson45Server(String host, int port) throws IOException {
         super(host, port);
         registerGet("/login",this::loginGet);
         registerPost("/login",this::loginPost);
-
+        registerGet("/register", this::registrationGet);
+        registerPost("/register", this::registrationPost);
     }
     private void loginGet(HttpExchange exchange){
         Path path = makeFilePath("login.html");
         sendFile(exchange,path, ContentType.TEXT_HTML);
     }
+
+    private void registrationGet(HttpExchange exchange){
+        Path path = makeFilePath("register.html");
+        sendFile(exchange,path, ContentType.TEXT_HTML);
+    }
+
     protected void registerPost(String route, RouteHandler handler){
         getRoutes().put("POST " + route,handler);
     }
@@ -41,6 +50,18 @@ public class Lesson45Server extends Lesson44Server{
                 +"Content-type:%s\n"
                 +"После обработки:%s";
         String data = String.format(fmt,raw,cType,parsed);
+        try {
+            redirect303(exchange, "/sample");
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+    }
+
+    private void registrationPost(HttpExchange exchange){
+        String cType = getContentType(exchange);
+        String raw = getBody(exchange);
+        Map<String,String> parsed = Utils.parseUrlEncoded(raw,"&");
+        fillUser(parsed.get("email"), parsed.get("user-name"), parsed.get("user-password"));
         try {
             redirect303(exchange, "/sample");
         }catch (Exception ex){
@@ -74,18 +95,8 @@ public class Lesson45Server extends Lesson44Server{
         }
     }
 
-    private void registerPost(HttpExchange exchange){
-        String cType = getContentType(exchange);
-        String raw = getBody(exchange);
-        Map<String,String> parsed = Utils.parseUrlEncoded(raw,"&");
-        String fmt = "Необработанные данные:%s\n"
-                +"Content-type:%s\n"
-                +"После обработки:%s";
-        String data = String.format(fmt,raw,cType,parsed);
-        try {
-            redirect303(exchange, "/sample");
-        }catch (Exception ex){
-            ex.printStackTrace();
-        }
+    private UserModel fillUser(String email, String name, String password) {
+        return new UserModel(email, name, password);
     }
+
 }
