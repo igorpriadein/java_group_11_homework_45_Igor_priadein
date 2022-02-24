@@ -30,6 +30,7 @@ public class Lesson45Server extends Lesson44Server{
         registerGet("/register", this::registrationGet);
         registerPost("/register", this::registrationPost);
         registerGet("/register_fail", this::registrationFailedPost);
+        registerGet("/profile", this::profileGet);
     }
     private void loginGet(HttpExchange exchange){
         Path path = makeFilePath("login.html");
@@ -46,20 +47,26 @@ public class Lesson45Server extends Lesson44Server{
         sendFile(exchange,path, ContentType.TEXT_HTML);
     }
 
+    private void profileGet(HttpExchange exchange){
+        Path path = makeFilePath("profile.html");
+        sendFile(exchange,path, ContentType.TEXT_HTML);
+    }
+
     protected void registerPost(String route, RouteHandler handler){
         getRoutes().put("POST " + route,handler);
     }
 
     private void loginPost(HttpExchange exchange){
-        String cType = getContentType(exchange);
         String raw = getBody(exchange);
         Map<String,String> parsed = Utils.parseUrlEncoded(raw,"&");
-        String fmt = "Необработанные данные:%s\n"
-                +"Content-type:%s\n"
-                +"После обработки:%s";
-        String data = String.format(fmt,raw,cType,parsed);
+        String path = "/login";
+        if(checkEmailAndPassWord(parsed.get("email"), parsed.get("user-password"))){
+            var user = getUserModel(parsed.get("email"), parsed.get("user-password"));
+            renderTemplate(exchange, "profile.html", user);
+            path = "/profile";
+        }
         try {
-            redirect303(exchange, "/sample");
+            redirect303(exchange, path);
         }catch (Exception ex){
             ex.printStackTrace();
         }
@@ -120,6 +127,35 @@ public class Lesson45Server extends Lesson44Server{
             }
         }
         return false;
+    }
+
+    private boolean checkEmailAndPassWord(String email, String password){
+        List<UserModel> users = null;
+        try{
+            users = JsonSerializer.getUsers();
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+        for(UserModel u : users){
+            if(u.getEmail().equals(email) && u.getPassword().equals(password)){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private UserModel getUserModel(String email, String password){
+        List<UserModel> users = null;
+        try{
+            users = JsonSerializer.getUsers();
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+        return users.stream()
+                .filter(u -> (u.getEmail().equals(email) && (u.getPassword().equals(password))))
+                .findFirst()
+                .orElse(null);
+
     }
 
 }
