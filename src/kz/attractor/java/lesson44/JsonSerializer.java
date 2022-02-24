@@ -10,20 +10,22 @@ import java.util.List;
 
 
 public class JsonSerializer {
-    public static List<UserModel.User> getUsers() throws IOException {
+    public static List<UserModel> getUsers() throws IOException {
         Gson gson = new Gson();
-        Type listType = new TypeToken<ArrayList<UserModel.User>>(){}.getType();
+        Type listType = new TypeToken<ArrayList<UserModel>>(){}.getType();
         try (Reader reader = new FileReader("users.json")) {
-            List<UserModel.User> users = gson.fromJson(reader, listType);
+            List<UserModel> users = gson.fromJson(reader, listType);
             return users;
         }
     }
 
-    public static void writeData(List<UserModel.User> users) throws IOException{
+    public static void writeData(List<UserModel> users){
         Gson gson = new Gson();
         try(Writer writer = new FileWriter("users.json")){
             String json = gson.toJson(users);
             writer.write(json);
+        }catch (IOException ex){
+            ex.printStackTrace();
         }
     }
 }

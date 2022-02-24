@@ -21,6 +21,8 @@ import java.util.stream.Collectors;
 public class Lesson45Server extends Lesson44Server{
 
 
+    private List<UserModel> users = new ArrayList<>();
+
     public Lesson45Server(String host, int port) throws IOException {
         super(host, port);
         registerGet("/login",this::loginGet);
@@ -58,10 +60,12 @@ public class Lesson45Server extends Lesson44Server{
     }
 
     private void registrationPost(HttpExchange exchange){
-        String cType = getContentType(exchange);
         String raw = getBody(exchange);
         Map<String,String> parsed = Utils.parseUrlEncoded(raw,"&");
-        fillUser(parsed.get("email"), parsed.get("user-name"), parsed.get("user-password"));
+        if(!checkUserEmail(parsed.get("email"))){
+            users.add(new UserModel(parsed.get("email"), parsed.get("user-name"), parsed.get("user-password")));
+            JsonSerializer.writeData(users);
+        }
         try {
             redirect303(exchange, "/sample");
         }catch (Exception ex){
@@ -95,8 +99,19 @@ public class Lesson45Server extends Lesson44Server{
         }
     }
 
-    private UserModel fillUser(String email, String name, String password) {
-        return new UserModel(email, name, password);
+    private boolean checkUserEmail(String email){
+            List<UserModel> users = null;
+        try{
+            users = JsonSerializer.getUsers();
+        }catch (IOException ex){
+            ex.printStackTrace();
+        }
+        for(UserModel u : users){
+            if(u.getEmail().equals(email)){
+                return true;
+            }
+        }
+        return false;
     }
 
 }
