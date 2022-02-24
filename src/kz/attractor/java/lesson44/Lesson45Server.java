@@ -29,6 +29,7 @@ public class Lesson45Server extends Lesson44Server{
         registerPost("/login",this::loginPost);
         registerGet("/register", this::registrationGet);
         registerPost("/register", this::registrationPost);
+        registerGet("/register_fail", this::registrationFailedPost);
     }
     private void loginGet(HttpExchange exchange){
         Path path = makeFilePath("login.html");
@@ -37,6 +38,11 @@ public class Lesson45Server extends Lesson44Server{
 
     private void registrationGet(HttpExchange exchange){
         Path path = makeFilePath("register.html");
+        sendFile(exchange,path, ContentType.TEXT_HTML);
+    }
+
+    private void registrationFailedPost(HttpExchange exchange){
+        Path path = makeFilePath("register_fail.html");
         sendFile(exchange,path, ContentType.TEXT_HTML);
     }
 
@@ -62,12 +68,14 @@ public class Lesson45Server extends Lesson44Server{
     private void registrationPost(HttpExchange exchange){
         String raw = getBody(exchange);
         Map<String,String> parsed = Utils.parseUrlEncoded(raw,"&");
-        if(!checkUserEmail(parsed.get("email"))){
-            users.add(new UserModel(parsed.get("email"), parsed.get("user-name"), parsed.get("user-password")));
-            JsonSerializer.writeData(users);
+        String path = "/sample";
+        if(checkUserEmail(parsed.get("email"))){
+            path = "/register_fail";
         }
+        users.add(new UserModel(parsed.get("email"), parsed.get("user-name"), parsed.get("user-password")));
+        JsonSerializer.writeData(users);
         try {
-            redirect303(exchange, "/sample");
+            redirect303(exchange, path);
         }catch (Exception ex){
             ex.printStackTrace();
         }
